@@ -1,0 +1,1114 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+
+
+
+    <title>Dash</title>
+<link rel="icon" href="icon.png">
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css?family=Press+Start+2P"
+    />
+
+    <style>
+      body {
+        background: #222;
+        font-family: "Press Start 2P", monospace;
+        font-smooth: never;
+        height: 98vh;
+      }                           
+
+      /* UI */
+      .topUI {
+        position: absolute;
+        z-index: 1000; /* need this cause clip-path changes stack context */
+        transform: translate(-50%, 25px);
+        text-shadow: -2px 0 black, 0 2px black, 2px 0 black, 0 -2px black;
+        letter-spacing: 2px;
+        color: #fff;
+        font-size: 17px;
+      }
+      .topUI::before {
+        display: inline-block;
+        height: 17px;
+        padding: 1px 2px;
+        line-height: 19px;
+        font-size: 17px;
+        background: #fff;
+        text-shadow: none;
+        font-weight: 900;
+        letter-spacing: 0;
+        border-radius: 6px;
+        margin-right: 30px;
+        border: 2px solid #7dd8c9;
+      }
+      #time {
+        left: 13%;
+        color: #f4f430;
+      }
+      #time::before {
+        content: "TIME";
+        color: #f57214;
+      }
+      #score {
+        left: 45%;
+      }
+      #score::before {
+        content: "SCORE";
+        color: #a61a9d;
+      }
+      #lap {
+        left: 88%;
+        width: 45%;
+      }
+      #lap::before {
+        content: "LAP";
+        color: #0082df;
+      }
+
+      #tacho {
+        position: absolute;
+        text-align: right;
+        width: 23%;
+        bottom: 5%;
+        z-index: 2000;
+        color: #e62e13;
+        text-shadow: -2px 0 black, 0 2px black, 2px 0 black, 0 -2px black;
+        letter-spacing: 2px;
+        font-size: 23px;
+      }
+      #tacho::after {
+        content: "km/h";
+        color: #fab453;
+        font-size: 18px;
+        margin-left: 5px;
+      }
+
+      /*
+  road
+*/
+      #game {
+        position: relative;
+        margin: 0 auto;
+        overflow: hidden;
+        background: #222;
+        user-select: none;
+        transition: opacity 10s;
+      }
+      #road {
+        transition: opacity 2s;
+        transition-timing-function: steps(8, end);
+      }
+      #road * {
+        position: absolute;
+        image-rendering: pixelated;
+      }
+      #hero {
+        background-repeat: no-repeat;
+        background-position: -110px 0;
+        z-index: 2000;
+        transform: scale(1.4);
+      }
+      #cloud {
+        background-size: auto 100%;
+        width: 100%;
+        height: 57%;
+      }
+
+      /*
+  home
+*/
+      #road {
+        position: absolute;
+        width: 100%;
+        height: 100%;
+      }
+
+      #home {
+        position: absolute;
+        color: #fff;
+        width: 100%;
+        height: 100%;
+
+        z-index: 1000; /* need this cause clip-path changes stack context */
+      }
+
+      #highscore {
+        position: absolute;
+        width: 100%;
+        height: 20%;
+        bottom: 0;
+        column-count: 3;
+        column-fill: auto;
+      }
+
+      #highscore * {
+        color: #9e95a8;
+        margin: 0 0 6px 27px;
+      }
+
+      h1 {
+        position: absolute;
+        left: 50%;
+        top: 25%;
+        transform: translate(-50%, -50%);
+        font-size: 5em;
+
+        background: -webkit-linear-gradient(#ff0808, #ffffff);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+      }
+
+      #text {
+        position: absolute;
+        left: 50%;
+        top: 50%;
+        transform: translate(-50%, -50%);
+        font-size: 1.2em;
+        color: #ff5858;
+        text-shadow: 0 0 black, 0 2px black, 2px 0 black, 0 0 black;
+      }
+
+      .blink {
+        animation: blinker 2s steps(4, end) infinite;
+      }
+      @keyframes blinker {
+        50% {
+          opacity: 0;
+        }
+      }
+
+      /*
+  Guide
+*/
+      #controls {
+        color: #868686;
+        font-size: 13px;
+        line-height: 13px;
+        margin: 10px;
+        text-align: center;
+      }
+      #controls > span {
+        margin-left: 20px;
+      }
+      #controls > span > span {
+        border: 2px solid #868686;
+        border-radius: 5px;
+        padding: 7px;
+        margin-right: 10px;
+        display: inline-block;
+      }
+      #controls > span:last-child > span {
+        transform: rotate(90deg);
+      }
+    </style>
+
+    <script>
+      window.console = window.console || function (t) {};
+    </script>
+
+    <script>
+      if (document.location.search.match(/type=embed/gi)) {
+        window.parent.postMessage("resize", "*");
+      }
+    </script>
+  </head>
+
+  <body translate="no">
+    <div id="game">
+      <div id="road">
+        <div id="cloud"></div>
+        <div id="hero"></div>
+      </div>
+
+      <div id="hud">
+        <span id="time" class="topUI">0</span>
+        <span id="score" class="topUI">0</span>
+        <span id="lap" class="topUI">0'00"000</span>
+        <span id="tacho">0</span>
+      </div>
+
+      <div id="home">
+        <h1>F1</h1>
+        <p id="text"></p>
+
+        <div id="highscore"></div>
+      </div>
+    </div>
+
+    <div id="controls">
+      <span><span>C</span>Aperte A Tecla C</span>
+      <span><span>M</span>mute</span>
+      <span><span>&lt;</span><span>&gt;</span>move</span>
+      <span><span>&lt;</span><span>&gt;</span>accelerate</span>
+    </div>
+    <script src="javascript/1.js"></script>
+
+    <script id="rendered-js">
+      // ------------------------------------------------------------
+      // assets
+      // ------------------------------------------------------------
+
+      // Definindo os ativos do jogo, como cores, imagens e áudios
+      const ASSETS = {
+        COLOR: {
+          TAR: ["#959298", "#9c9a9d"], // Cores para a estrada (TAR)
+          RUMBLE: ["#959298", "#f5f2f6"], // Cores para áreas ao redor (RUMBLE)
+          GRASS: ["#eedccd", "#e6d4c5"], // Cores para áreas de grama (GRASS)
+        },
+
+        IMAGE: {
+          // Definindo imagens e suas dimensões
+          TREE: {
+            src: "images/tree.png",
+            width: 500,
+            height: 300,
+          },
+
+          HERO: {
+            src: "images/hero.png", // Imagem do herói
+            width: 110,
+            height: 56,
+          },
+
+          CAR: {
+            src: "images/car04.png", // Imagem de um carro
+            width: 50,
+            height: 36,
+          },
+
+          FINISH: {
+            src: "images/finish.png", // Imagem da linha de chegada
+            width: 339,
+            height: 180,
+            offset: -0.5,
+          },
+
+          SKY: {
+            src: "images/cloud.jpg", // Imagem do céu
+          },
+        },
+
+        AUDIO: {
+          // Definindo trilha sonora e efeitos sonoros
+          theme:
+            "https://s3-us-west-2.amazonaws.com/s.cdpn.io/155629/theme.mp3",
+          engine:
+            "https://s3-us-west-2.amazonaws.com/s.cdpn.io/155629/engine.wav",
+          honk: "https://s3-us-west-2.amazonaws.com/s.cdpn.io/155629/honk.wav",
+          beep: "https://s3-us-west-2.amazonaws.com/s.cdpn.io/155629/beep.wav",
+        },
+      };
+
+      // ------------------------------------------------------------
+      // helper functions
+      // ------------------------------------------------------------
+
+      // Adiciona um método ao protótipo de Number para preenchimento com zeros
+      Number.prototype.pad = function (numZeros, char = 0) {
+        let n = Math.abs(this);
+        let zeros = Math.max(0, numZeros - Math.floor(n).toString().length);
+        let zeroString = Math.pow(10, zeros)
+          .toString()
+          .substr(1)
+          .replace(0, char); // Substitui '0' pelo caractere especificado
+        return zeroString + n;
+      };
+
+      // Adiciona um método ao protótipo de Number para limitar valores entre min e max
+      Number.prototype.clamp = function (min, max) {
+        return Math.max(min, Math.min(this, max));
+      };
+
+      // Função para obter o timestamp atual
+      const timestamp = (_) => new Date().getTime();
+      
+      // Calcula a velocidade com aceleração ao longo do tempo
+      const accelerate = (v, accel, dt) => v + accel * dt;
+      
+      // Verifica colisão com base nas posições e larguras
+      const isCollide = (x1, w1, x2, w2) => (x1 - x2) ** 2 <= (w2 + w1) ** 2;
+
+      // Gera um número aleatório entre min e max
+      function getRand(min, max) {
+        return (Math.random() * (max - min) + min) | 0;
+      }
+
+      // Seleciona uma propriedade aleatória de um objeto
+      function randomProperty(obj) {
+        let keys = Object.keys(obj);
+        return obj[keys[(keys.length * Math.random()) << 0]];
+      }
+
+      // Função para desenhar um quadrado com estilos específicos
+      function drawQuad(element, layer, color, x1, y1, w1, x2, y2, w2) {
+        element.style.zIndex = layer; // Define a ordem de exibição (camada)
+        element.style.background = color;
+        element.style.top = y2 + `px`;
+        element.style.left = x1 - w1 / 2 - w1 + `px`;
+        element.style.width = w1 * 3 + `px`;
+        element.style.height = y1 - y2 + `px`;
+
+        // Calcula e aplica a máscara de corte
+        let leftOffset = w1 + x2 - x1 + Math.abs(w2 / 2 - w1 / 2);
+        element.style.clipPath = `polygon(${leftOffset}px 0, ${
+          leftOffset + w2
+        }px 0, 66.66% 100%, 33.33% 100%)`;
+      }
+
+      // Objeto para armazenar o estado das teclas
+      const KEYS = {};
+
+      // Função para atualizar o estado das teclas pressionadas
+      const keyUpdate = (e) => {
+        KEYS[e.code] = e.type === `keydown`; // Armazena o estado (pressionado ou solto)
+        e.preventDefault(); // Evita o comportamento padrão da tecla
+      };
+
+      // Adiciona os listeners de 'keydown' e 'keyup'
+      addEventListener(`keydown`, keyUpdate);
+      addEventListener(`keyup`, keyUpdate);
+
+      // Função para pausar a execução por um certo tempo
+      function sleep(ms) {
+        return new Promise(function (resolve, reject) {
+          setTimeout((_) => resolve(), ms);
+        });
+      }
+
+      // ------------------------------------------------------------
+      // objects
+      // ------------------------------------------------------------
+
+      class Line {
+        constructor() {
+          // Inicializa as propriedades de posição e escala da linha
+          this.x = 0; // Posição X
+          this.y = 0; // Posição Y
+          this.z = 0; // Posição Z (distância da câmera)
+
+          this.X = 0; // Posição X projetada na tela
+          this.Y = 0; // Posição Y projetada na tela
+          this.W = 0; // Largura projetada da linha
+
+          this.curve = 0; // Curvatura da linha
+          this.scale = 0; // Escala da linha baseada na profundidade
+
+          this.elements = []; // Lista de elementos visuais associados à linha
+          this.special = null; // Elemento especial opcional
+        }
+
+        project(camX, camY, camZ) {
+          // Projeta a linha na tela com base na posição da câmera
+          this.scale = camD / (this.z - camZ); // Calcula a escala
+          this.X = (1 + this.scale * (this.x - camX)) * halfWidth; // Calcula a posição X projetada
+          this.Y = Math.ceil(((1 - this.scale * (this.y - camY)) * height) / 2); // Calcula a posição Y projetada
+          this.W = this.scale * roadW * halfWidth; // Calcula a largura projetada da linha
+        }
+
+        clearSprites() {
+          // Limpa os sprites associados à linha, tornando-os transparentes
+          for (let e of this.elements) e.style.background = "transparent";
+        }
+
+        drawSprite(depth, layer, sprite, offset) {
+          // Desenha um sprite na posição projetada da linha
+          let destX = this.X + this.scale * halfWidth * offset; // Calcula a posição X do sprite
+          let destY = this.Y + 4; // Define a posição Y do sprite
+          let destW = (sprite.width * this.W) / 265; // Define a largura do sprite
+          let destH = (sprite.height * this.W) / 265; // Define a altura do sprite
+
+          // Ajusta as posições X e Y do sprite com base no deslocamento
+          destX += destW * offset;
+          destY += destH * -1;
+
+          let obj = layer instanceof Element ? layer : this.elements[layer + 6]; // Determina o elemento a ser desenhado
+          obj.style.background = `url('${sprite.src}') no-repeat`; // Define a imagem de fundo do sprite
+          obj.style.backgroundSize = `${destW}px ${destH}px`; // Define o tamanho do sprite
+          obj.style.left = destX + `px`; // Define a posição X na tela
+          obj.style.top = destY + `px`; // Define a posição Y na tela
+          obj.style.width = destW + `px`; // Define a largura do sprite
+          obj.style.height = destH + `px`; // Define a altura do sprite
+          obj.style.zIndex = depth; // Define a profundidade (camada) do sprite
+        }
+      }
+
+      class Car {
+        constructor(pos, type, lane) {
+          // Inicializa as propriedades do carro
+          this.pos = pos; // Posição na pista
+          this.type = type; // Tipo do carro
+          this.lane = lane; // Faixa onde o carro está localizado
+
+          // Cria um elemento visual para o carro e o adiciona à estrada
+          var element = document.createElement("div");
+          road.appendChild(element);
+          this.element = element;
+        }
+      }
+
+      class Audio {
+        constructor() {
+          // Inicializa o contexto de áudio para o jogo
+          this.audioCtx = new AudioContext();
+
+          // Configura o controle de volume
+          this.destination = this.audioCtx.createGain();
+          this.volume = 1; // Volume padrão
+          this.destination.connect(this.audioCtx.destination);
+
+          this.files = {}; // Armazena os arquivos de áudio carregados
+
+          let _self = this;
+          this.load(ASSETS.AUDIO.theme, "theme", function (key) {
+            // Carrega o tema principal e o reproduz em loop
+            let source = _self.audioCtx.createBufferSource();
+            source.buffer = _self.files[key];
+
+            let gainNode = _self.audioCtx.createGain(); // Controle de volume para o tema
+            gainNode.gain.value = 0.6; // Define o volume do tema
+            source.connect(gainNode);
+            gainNode.connect(_self.destination);
+
+            source.loop = true; // Define para repetir em loop
+            source.start(0); // Inicia a reprodução
+          });
+        }
+
+        get volume() {
+          // Obtém o valor atual do volume
+          return this.destination.gain.value;
+        }
+
+        set volume(level) {
+          // Define o valor do volume
+          this.destination.gain.value = level;
+        }
+
+        play(key, pitch) {
+          // Reproduz um arquivo de áudio específico
+          if (this.files[key]) {
+            let source = this.audioCtx.createBufferSource();
+            source.buffer = this.files[key];
+            source.connect(this.destination);
+            if (pitch) source.detune.value = pitch; // Ajusta o tom, se fornecido
+            source.start(0); // Inicia a reprodução
+          } else this.load(key, () => this.play(key)); // Carrega o áudio, se necessário
+        }
+
+        load(src, key, callback) {
+          // Carrega um arquivo de áudio via XMLHttpRequest
+          let _self = this;
+          let request = new XMLHttpRequest();
+          request.open("GET", src, true);
+          request.responseType = "arraybuffer";
+          request.onload = function () {
+            // Decodifica o áudio e o armazena em files
+            _self.audioCtx.decodeAudioData(
+              request.response,
+              function (beatportBuffer) {
+                _self.files[key] = beatportBuffer; // Armazena o buffer de áudio carregado
+                callback(key); // Chama a função de callback após o carregamento
+              },
+              function () {}
+            );
+          };
+          request.send(); // Envia a solicitação
+        }
+      }
+
+      // ------------------------------------------------------------
+      // global varriables
+      // ------------------------------------------------------------
+
+      // Armazena as pontuações mais altas do jogo
+const highscores = [];
+
+// Definições de dimensões e propriedades do jogo
+const width = 800; // Largura da tela
+const halfWidth = width / 2; // Metade da largura da tela
+const height = 500; // Altura da tela
+const roadW = 4000; // Largura da estrada
+const segL = 200; // Comprimento de cada segmento da estrada
+const camD = 0.2; // Distância da câmera (profundidade)
+const H = 1500; // Altura do cenário
+const N = 70; // Número de segmentos de estrada
+
+// Propriedades de movimento do jogo
+const maxSpeed = 200; // Velocidade máxima do carro
+const accel = 38; // Taxa de aceleração
+const breaking = -80; // Força de frenagem
+const decel = -40; // Taxa de desaceleração
+const maxOffSpeed = 40; // Velocidade máxima off-road
+const offDecel = -70; // Taxa de desaceleração off-road
+const enemy_speed = 8; // Velocidade dos carros inimigos
+const hitSpeed = 20; // Velocidade ao colidir com um obstáculo
+
+// Definições das faixas da estrada
+const LANE = {
+  A: -2.3, // Faixa A
+  B: -0.5, // Faixa B (central)
+  C: 1.2,  // Faixa C
+};
+
+// Comprimento total do mapa (distância até o final da estrada)
+const mapLength = 15000;
+
+// Variáveis para o loop do jogo
+let then = timestamp(); // Timestamp do último frame para controle de tempo
+const targetFrameRate = 1000 / 25; // Taxa de quadros alvo (em milissegundos)
+
+// Variável para o controle de áudio do jogo
+let audio;
+
+// Variáveis principais do jogo
+let inGame, // Flag indicando se o jogo está em andamento
+    start, // Variável de controle para o início do jogo
+    playerX, // Posição X do jogador
+    speed, // Velocidade do jogador
+    scoreVal, // Pontuação do jogador
+    pos, // Posição do jogador
+    cloudOffset, // Deslocamento das nuvens no fundo
+    sectionProg, // Progresso na seção do mapa
+    mapIndex, // Índice atual do mapa
+    countDown; // Contagem regressiva antes do jogo começar
+
+// Arrays para armazenar as linhas e os carros no jogo
+let lines = []; // Armazena as linhas da estrada
+let cars = [];  // Armazena os carros no jogo
+
+      // ------------------------------------------------------------
+      // map
+      // ------------------------------------------------------------
+
+      // Função que retorna uma função anônima que sempre retorna o valor passado
+function getFun(val) {
+  return (i) => val; // A função retornada recebe um argumento 'i', mas sempre retorna 'val'
+}
+
+// Função que gera o mapa do jogo
+function genMap() {
+  let map = []; // Array para armazenar as seções do mapa
+
+  // Loop que vai até o comprimento total do mapa, incrementando um valor aleatório de 0 a 50 a cada iteração
+  for (var i = 0; i < mapLength; i += getRand(0, 50)) {
+    let section = { // Cria um novo segmento do mapa
+      from: i, // Posição inicial do segmento
+      to: (i = i + getRand(300, 600)), // Posição final do segmento (inicia em 'i' e adiciona um valor aleatório entre 300 e 600)
+    };
+
+    // Gera valores aleatórios para a altura e a curvatura do segmento
+    let randHeight = getRand(-5, 5); // Gera uma altura aleatória entre -5 e 5
+    let randCurve = getRand(5, 30) * (Math.random() >= 0.5 ? 1 : -1); // Gera uma curvatura aleatória entre -30 e 30
+    let randInterval = getRand(20, 40); // Gera um intervalo aleatório entre 20 e 40
+
+    // Aleatoriamente decide o tipo de curva e altura para o segmento do mapa
+    // Dependendo dos valores aleatórios, a altura e a curva podem ser diferentes
+    if (Math.random() > 0.9)
+      Object.assign(section, {
+        curve: (_) => randCurve, // Curvatura aleatória
+        height: (_) => randHeight, // Altura aleatória
+      });
+    else if (Math.random() > 0.8)
+      Object.assign(section, {
+        curve: (_) => 0, // Curvatura zero (estrada reta)
+        height: (i) => Math.sin(i / randInterval) * 1000, // Altura com uma função seno para criar uma elevação ondulada
+      });
+    else if (Math.random() > 0.8)
+      Object.assign(section, {
+        curve: (_) => 0, // Curvatura zero (estrada reta)
+        height: (_) => randHeight, // Altura aleatória
+      });
+    else
+      Object.assign(section, {
+        curve: (_) => randCurve, // Curvatura aleatória
+        height: (_) => 0, // Sem elevação (estrada plana)
+      });
+
+    map.push(section); // Adiciona a seção ao mapa
+  }
+
+  // Adiciona a última seção do mapa, que é o final do jogo (linha de chegada)
+  map.push({
+    from: i, // Posição de início da linha de chegada
+    to: i + N, // Posição de fim da linha de chegada
+    curve: (_) => 0, // Curvatura zero (estrada reta)
+    height: (_) => 0, // Sem elevação (estrada plana)
+    special: ASSETS.IMAGE.FINISH, // Define a imagem de linha de chegada
+  });
+
+  // Adiciona um objeto com "from" definido como 'Infinity' para marcar o fim do mapa
+  map.push({ from: Infinity });
+
+  return map; // Retorna o mapa gerado
+}
+
+// Chama a função genMap e armazena o mapa gerado na variável 'map'
+let map = genMap();
+
+      // ------------------------------------------------------------
+      // additional controls
+      // ------------------------------------------------------------
+
+      // Adiciona um ouvinte de evento para o evento 'keyup', que é acionado quando uma tecla é liberada
+addEventListener(`keyup`, function (e) {
+
+  // Verifica se a tecla pressionada é a "KeyM" (mudo/volume)
+  if (e.code === "KeyM") {
+    e.preventDefault(); // Previne o comportamento padrão da tecla (se houver)
+
+    // Alterna o volume do áudio: se o volume estiver em 0 (mudo), define como 1 (máximo), caso contrário, define como 0 (mudo)
+    audio.volume = audio.volume === 0 ? 1 : 0;
+    return; // Sai da função após realizar a ação
+
+  }
+
+  // Verifica se a tecla pressionada é a "KeyC" (iniciar o jogo)
+  if (e.code === "KeyC") {
+    e.preventDefault(); // Previne o comportamento padrão da tecla
+
+    // Se o jogo já estiver em andamento (inGame = true), não faz nada
+    if (inGame) return;
+
+    // Inicia uma sequência de promessas com 'sleep' e animações para o início do jogo
+    sleep(0) // Começa com uma pausa de 0ms
+      .then((_) => {
+        // Remove a classe 'blink' do texto e altera o texto para "3"
+        text.classList.remove("blink");
+        text.innerText = 3;
+        audio.play("beep"); // Reproduz um som "beep"
+        return sleep(1000); // Aguarda 1 segundo antes de continuar
+      })
+      .then((_) => {
+        text.innerText = 2; // Atualiza o texto para "2"
+        audio.play("beep"); // Reproduz o som "beep" novamente
+        return sleep(1000); // Aguarda 1 segundo antes de continuar
+      })
+      .then((_) => {
+        text.innerText = 1; // Atualiza o texto para "1"
+        audio.play("beep"); // Reproduz o som "beep" novamente
+        return sleep(1000); // Aguarda 1 segundo antes de continuar
+      })
+      .then((_) => {
+        // Função para reiniciar o jogo e exibir elementos da tela
+        reset(); // Chama a função 'reset' (possivelmente para redefinir o estado do jogo)
+
+        home.style.display = "none"; // Oculta a tela inicial
+        road.style.opacity = 1; // Torna a estrada visível
+        hero.style.display = "block"; // Torna o herói visível
+        hud.style.display = "block"; // Exibe o HUD (interface do usuário)
+
+        audio.play("beep", 500); // Reproduz um som "beep" com um tom modificado
+
+        inGame = true; // Define a variável 'inGame' como verdadeira, iniciando o jogo
+      });
+
+    return; // Sai da função após iniciar o jogo
+
+  }
+
+  // Verifica se a tecla pressionada é a "Escape" (escapar/resetar o jogo)
+  if (e.code === "Escape") {
+    e.preventDefault(); // Previne o comportamento padrão da tecla (se houver)
+
+    reset(); // Chama a função 'reset' para reiniciar o jogo
+  }
+});
+
+
+      // ------------------------------------------------------------
+      // game loop
+      // ------------------------------------------------------------
+
+      function update(step) {
+        // prepare this iteration
+        pos += speed;
+        while (pos >= N * segL) pos -= N * segL;
+        while (pos < 0) pos += N * segL;
+
+        var startPos = (pos / segL) | 0;
+        let endPos = (startPos + N - 1) % N;
+
+        scoreVal += speed * step;
+        countDown -= step;
+
+        // left / right position
+        playerX -= (lines[startPos].curve / 5000) * step * speed;
+
+        if (KEYS.ArrowRight)
+          (hero.style.backgroundPosition = "-220px 0"),
+            (playerX += 0.007 * step * speed);
+        else if (KEYS.ArrowLeft)
+          (hero.style.backgroundPosition = "0 0"),
+            (playerX -= 0.007 * step * speed);
+        else hero.style.backgroundPosition = "-110px 0";
+
+        playerX = playerX.clamp(-3, 3);
+
+        // speed
+
+        if (inGame && KEYS.ArrowUp) speed = accelerate(speed, accel, step);
+        else if (KEYS.ArrowDown) speed = accelerate(speed, breaking, step);
+        else speed = accelerate(speed, decel, step);
+
+        if (Math.abs(playerX) > 0.55 && speed >= maxOffSpeed) {
+          speed = accelerate(speed, offDecel, step);
+        }
+
+        speed = speed.clamp(0, maxSpeed);
+
+        // update map
+        let current = map[mapIndex];
+        let use = current.from < scoreVal && current.to > scoreVal;
+        if (use) sectionProg += speed * step;
+        lines[endPos].curve = use ? current.curve(sectionProg) : 0;
+        lines[endPos].y = use ? current.height(sectionProg) : 0;
+        lines[endPos].special = null;
+
+        if (current.to <= scoreVal) {
+          mapIndex++;
+          sectionProg = 0;
+
+          lines[endPos].special = map[mapIndex].special;
+        }
+
+        // win / lose + UI
+
+        if (!inGame) {
+          speed = accelerate(speed, breaking, step);
+          speed = speed.clamp(0, maxSpeed);
+        } else if (countDown <= 0 || lines[startPos].special) {
+          tacho.style.display = "none";
+
+          home.style.display = "block";
+          road.style.opacity = 0.4;
+          text.innerText = "INSERT COIN";
+
+          highscores.push(lap.innerText);
+          highscores.sort();
+          updateHighscore();
+
+          inGame = false;
+        } else {
+          time.innerText = (countDown | 0).pad(3);
+          score.innerText = (scoreVal | 0).pad(8);
+          tacho.innerText = speed | 0;
+
+          let cT = new Date(timestamp() - start);
+          lap.innerText = `${cT.getMinutes()}'${cT.getSeconds().pad(2)}"${cT
+            .getMilliseconds()
+            .pad(3)}`;
+        }
+
+        // sound
+        if (speed > 0) audio.play("engine", speed * 4);
+
+        // draw cloud
+        cloud.style.backgroundPosition = `${
+          (cloudOffset -= lines[startPos].curve * step * speed * 0.13) | 0
+        }px 0`;
+
+        // other cars
+        for (let car of cars) {
+          car.pos = (car.pos + enemy_speed * step) % N;
+
+          // respawn
+          if ((car.pos | 0) === endPos) {
+            if (speed < 30) car.pos = startPos;
+            else car.pos = endPos - 2;
+            car.lane = randomProperty(LANE);
+          }
+
+          const offsetRatio = 5; // Ajuste da área de colisão
+let isGamePaused = false; // Flag para verificar se o jogo está pausado por causa da colisão
+
+// Função para perguntar ao jogador
+function askQuestion() {
+  const question = "Qual é a cor do carro?";
+  const answer = prompt(question); // Pergunta ao jogador. A função 'prompt' pode ser substituída por um modal ou outro tipo de interação gráfica
+  
+  // Checa a resposta e decide o que fazer
+  if (answer && answer.toLowerCase() === "vermelho") {
+    // Se acertar, retoma o jogo
+    resumeGame();
+  } else {
+    // Se errar, Game Over
+    gameOver();
+  }
+}
+
+// Função que pausa o jogo e faz a pergunta
+function stopGameAndAskQuestion() {
+  stopGame(); // Pausa o jogo
+  askQuestion(); // Pergunta ao jogador
+}
+
+// Função para retomar o jogo
+function resumeGame() {
+  isGamePaused = false; // Define que o jogo não está mais pausado
+  startGame(); // Inicia ou retoma o jogo de onde parou
+}
+
+// Função para game over
+function gameOver() {
+  alert("Game Over! Você errou a resposta.");
+  // Aqui você pode adicionar lógica para mostrar tela de fim de jogo, opções de reiniciar, etc.
+  reset(); // Reseta o jogo
+}
+
+// Verifica se o jogador colidiu com o carro, mas apenas se a velocidade for maior que zero
+if (speed > 0 && (car.pos | 0) === startPos && isCollide(playerX * offsetRatio + LANE.B, 0.5, car.lane, 0.5)) {
+  // Reduz a velocidade do carro na colisão
+  speed = Math.min(hitSpeed, speed);
+
+  // Toca o som de buzina se o jogo estiver em andamento
+  if (inGame) audio.play("honk");
+
+  // Interrompe o jogo e faz a pergunta
+  if (!isGamePaused) {
+    isGamePaused = true; // Marca que o jogo está pausado devido à colisão
+    stopGameAndAskQuestion(); // Pausa o jogo e faz a pergunta
+  }
+}
+}
+        // draw road
+        let maxy = height;
+        let camH = H + lines[startPos].y;
+        let x = 0;
+        let dx = 0;
+
+        for (let n = startPos; n < startPos + N; n++) {
+          let l = lines[n % N];
+          let level = N * 2 - n;
+
+          // update view
+          l.project(
+            playerX * roadW - x,
+            camH,
+            startPos * segL - (n >= N ? N * segL : 0)
+          );
+          x += dx;
+          dx += l.curve;
+
+          // clear assets
+          l.clearSprites();
+
+          // first draw section assets
+          if (n % 10 === 0) l.drawSprite(level, 0, ASSETS.IMAGE.TREE, -2);
+          if ((n + 5) % 10 === 0)
+            l.drawSprite(level, 0, ASSETS.IMAGE.TREE, 1.3);
+
+          if (l.special)
+            l.drawSprite(level, 0, l.special, l.special.offset || 0);
+
+          for (let car of cars)
+            if ((car.pos | 0) === n % N)
+              l.drawSprite(level, car.element, car.type, car.lane);
+
+          // update road
+
+          if (l.Y >= maxy) continue;
+          maxy = l.Y;
+
+          let even = ((n / 2) | 0) % 2;
+          let grass = ASSETS.COLOR.GRASS[even * 1];
+          let rumble = ASSETS.COLOR.RUMBLE[even * 1];
+          let tar = ASSETS.COLOR.TAR[even * 1];
+
+          let p = lines[(n - 1) % N];
+
+          drawQuad(
+            l.elements[0],
+            level,
+            grass,
+            width / 4,
+            p.Y,
+            halfWidth + 2,
+            width / 4,
+            l.Y,
+            halfWidth
+          );
+          drawQuad(
+            l.elements[1],
+            level,
+            grass,
+            (width / 4) * 3,
+            p.Y,
+            halfWidth + 2,
+            (width / 4) * 3,
+            l.Y,
+            halfWidth
+          );
+
+          drawQuad(
+            l.elements[2],
+            level,
+            rumble,
+            p.X,
+            p.Y,
+            p.W * 1.15,
+            l.X,
+            l.Y,
+            l.W * 1.15
+          );
+          drawQuad(l.elements[3], level, tar, p.X, p.Y, p.W, l.X, l.Y, l.W);
+
+          if (!even) {
+            drawQuad(
+              l.elements[4],
+              level,
+              ASSETS.COLOR.RUMBLE[1],
+              p.X,
+              p.Y,
+              p.W * 0.4,
+              l.X,
+              l.Y,
+              l.W * 0.4
+            );
+            drawQuad(
+              l.elements[5],
+              level,
+              tar,
+              p.X,
+              p.Y,
+              p.W * 0.35,
+              l.X,
+              l.Y,
+              l.W * 0.35
+            );
+          }
+        }
+      }
+
+      // ------------------------------------------------------------
+      // init
+      // ------------------------------------------------------------
+
+      function reset() {
+    inGame = false; // Desativa o estado do jogo (indica que o jogo não está em andamento)
+
+    start = timestamp(); // Registra o timestamp atual para iniciar o jogo
+    countDown = map[map.length - 2].to / 130 + 10; // Define o tempo de contagem regressiva com base no mapa
+
+    playerX = 0; // Reseta a posição do jogador no eixo X
+    speed = 0; // Reseta a velocidade
+    scoreVal = 0; // Reseta a pontuação
+    pos = 0; // Reseta a posição da estrada
+    cloudOffset = 0; // Reseta o deslocamento das nuvens
+    sectionProg = 0; // Reseta o progresso da seção da estrada
+    mapIndex = 0; // Reseta o índice do mapa
+
+    // Reseta a curva e a posição Y de todas as linhas
+    for (let line of lines) line.curve = line.y = 0;
+
+    // Atualiza o texto para "INSERT COIN" e aplica a classe para fazer o texto piscar
+    text.innerText = "INSERT COIN";
+    text.classList.add("blink");
+
+    // Ajusta a opacidade da estrada e oculta os elementos do HUD e da tela inicial
+    road.style.opacity = 0.4;
+    hud.style.display = "none";
+    home.style.display = "block";
+    tacho.style.display = "block";
+}
+function stopGame() {
+    inGame = false; // Desativa o estado do jogo (indica que o jogo não está em andamento)
+    text.innerText = "GAMEOVER";  // Atualize para "PAUSED" ou outro texto desejado
+    text.classList.remove("blink");  // Remova a classe de piscar, pois não precisamos disso ao pausar
+
+    // Ajusta a opacidade da estrada e oculta os elementos do HUD, mas mantem a tela principal visível
+    road.style.opacity = 0.4;  // A estrada pode continuar visível ou não
+    hud.style.display = "none";  // Oculta o HUD (interface do jogador)
+    home.style.display = "block"; // Mantém a tela principal visível
+    tacho.style.display = "block"; // Pode manter outros elementos da tela principal visíveis
+}
+
+      function updateHighscore() {
+    let hN = Math.min(12, highscores.length); // Define o número de placares a serem exibidos, no máximo 12
+    for (let i = 0; i < hN; i++) {
+        // Atualiza o placar com a pontuação mais alta
+        highscore.children[i].innerHTML = `${(i + 1).pad(2, "&nbsp;")}. ${highscores[i]}`;
+    }
+}
+
+
+      function init() {
+    // Ajusta o tamanho da tela do jogo
+    game.style.width = width + "px";
+    game.style.height = height + "px";
+
+    // Define a posição inicial do personagem (herói) no eixo Y (80 pixels acima da base) e no eixo X (centralizado)
+    hero.style.top = height - 80 + "px";
+    hero.style.left = halfWidth - ASSETS.IMAGE.HERO.width / 2 + "px";
+    hero.style.background = `url(${ASSETS.IMAGE.HERO.src})`; // Define a imagem do herói
+    hero.style.width = `${ASSETS.IMAGE.HERO.width}px`;
+    hero.style.height = `${ASSETS.IMAGE.HERO.height}px`;
+
+    // Define o fundo do céu
+    cloud.style.backgroundImage = `url(${ASSETS.IMAGE.SKY.src})`;
+
+    // Carrega os áudios do jogo
+    audio = new Audio();
+    Object.keys(ASSETS.AUDIO).forEach((key) =>
+        audio.load(ASSETS.AUDIO[key], key, (_) => 0)
+    );
+
+    // Cria vários carros com diferentes posições e lanes (faixas)
+    cars.push(new Car(0, ASSETS.IMAGE.CAR, LANE.C));
+    cars.push(new Car(10, ASSETS.IMAGE.CAR, LANE.B));
+    cars.push(new Car(20, ASSETS.IMAGE.CAR, LANE.C));
+    cars.push(new Car(35, ASSETS.IMAGE.CAR, LANE.C));
+    cars.push(new Car(50, ASSETS.IMAGE.CAR, LANE.A));
+    cars.push(new Car(60, ASSETS.IMAGE.CAR, LANE.B));
+    cars.push(new Car(70, ASSETS.IMAGE.CAR, LANE.A));
+
+    // Cria linhas de estrada
+    for (let i = 0; i < N; i++) {
+        var line = new Line();
+        line.z = i * segL + 270; // Define a posição Z (profundidade) da linha
+
+        // Cria 8 elementos HTML para cada linha de estrada e os adiciona à linha
+        for (let j = 0; j < 6 + 2; j++) {
+            var element = document.createElement("div");
+            road.appendChild(element);
+            line.elements.push(element);
+        }
+
+        lines.push(line);
+    }
+
+    // Cria elementos HTML para o placar e os adiciona ao DOM
+    for (let i = 0; i < 12; i++) {
+        var element = document.createElement("p");
+        highscore.appendChild(element);
+    }
+
+    // Atualiza o placar com as pontuações mais altas
+    updateHighscore();
+
+    // Chama a função de reset para iniciar o jogo
+    reset();
+
+    // Inicia o loop do jogo
+    (function loop() {
+        requestAnimationFrame(loop); // Solicita a próxima animação
+
+        let now = timestamp(); // Obtém o timestamp atual
+        let delta = now - then; // Calcula o tempo desde a última execução
+
+        if (delta > targetFrameRate) { // Se o tempo entre os frames for maior que o alvo
+            then = now - (delta % targetFrameRate); // Ajusta o tempo do próximo frame
+            update(delta / 1000); // Chama a função de atualização do jogo, passando o delta convertido para segundos
+        }
+    })();
+}
+
+
+      init(); // Chama a função init() para configurar e iniciar o jogo
+      //# sourceURL=pen.js
+    </script>
+    <script src="javascript/null.js"></script>
+  </body>
+</html>
