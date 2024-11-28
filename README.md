@@ -53,5 +53,5 @@ Grave um vídeo de no máximo 5 minutos demonstrando o jogo.
 Mostre as principais funcionalidades e a jogabilidade.
 Certifique-se de que o vídeo está claro e fácil de entender
 
-link: https://youtu.be/XoZcPTnW5Cw
+link: https://youtu.be/XoZcPTnW5Cw,
 Uma gameplay melhor: https://youtu.be/6MwtmrhjXXo
