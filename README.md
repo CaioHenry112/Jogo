@@ -1,3 +1,12 @@
+1. Nomes/RGM:
+Caio Henrique : 30062314
+Leonardo Zeraik: 26606151
+Ricardo Martins Ribeiro: 31306071
+Yury Moura de Andrade Filho: 29787459
+Ney Victor: 30220599
+Yuri Garcia Chacon 30990114
+
+
 2. Checklist do DesDenvolvimento do Jogo
 Definição do Tema: Escolha e descreva o tema do jogo
 
